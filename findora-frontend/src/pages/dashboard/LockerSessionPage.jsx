@@ -82,6 +82,19 @@ export default function LockerSessionPage() {
     }
   };
 
+  const handleRearm = async () => {
+    setProcessing(true);
+    try {
+      const { data } = await lockersAPI.rearm();
+      toast.success(`🎉 Locker re-armed! New OTP: ${data.otp}`);
+      fetchSession();
+    } catch (e) {
+      toast.error('Failed to re-arm locker');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -165,15 +178,15 @@ export default function LockerSessionPage() {
             </div>
           )}
 
-          {['ITEM_DEPOSITED', 'READY_FOR_COLLECTION'].includes(session.state) && isCollector && (
+          {['ITEM_DEPOSITED', 'READY_FOR_COLLECTION'].includes(session.state) && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
               <div className="space-y-2">
                 <p className="text-sm text-green-800 font-medium">
-                  🔑 Enter your OTP to unlock the locker
+                  🔑 Enter your OTP to unlock the locker (or type on ESP32 Keypad)
                 </p>
                 {session.otp && session.otp !== '******' && (
                   <div className="bg-white border border-green-300 rounded p-2">
-                    <p className="text-xs text-gray-600">Your OTP:</p>
+                    <p className="text-xs text-gray-600">Your Active OTP:</p>
                     <p className="text-2xl font-mono font-bold text-green-700 tracking-widest">
                       {session.otp}
                     </p>
@@ -197,19 +210,25 @@ export default function LockerSessionPage() {
             </div>
           )}
 
-          {session.state === 'OPEN' && isCollector && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+          {session.state === 'OPEN' && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center space-y-3">
               <CheckCircle className="w-12 h-12 text-orange-600 mx-auto mb-2" />
-              <p className="text-orange-800 font-medium">🚪 Locker is Open!</p>
-              <p className="text-sm text-orange-600">Please collect your item. The locker will auto-close.</p>
+              <p className="text-orange-800 font-medium text-lg">🚪 Locker is Open / Access Granted!</p>
+              <p className="text-sm text-orange-600">Item collected. Ready to test again?</p>
+              <Button onClick={handleRearm} loading={processing} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                ⚡ Test Again (Re-arm Locker & New OTP)
+              </Button>
             </div>
           )}
 
           {session.state === 'COLLECTED' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center space-y-3">
               <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-2" />
-              <p className="text-green-800 font-medium">🎉 Item Collected!</p>
+              <p className="text-green-800 font-medium text-lg">🎉 Item Collected!</p>
               <p className="text-sm text-green-600">Case completed successfully.</p>
+              <Button onClick={handleRearm} loading={processing} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                ⚡ Test Again (Re-arm Locker & New OTP)
+              </Button>
             </div>
           )}
         </CardContent>

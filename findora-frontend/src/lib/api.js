@@ -79,6 +79,8 @@ export const lockersAPI = {
   verifyOTP: (sessionId, otp) => api.post(`/lockers/sessions/${sessionId}/verify-otp`, { otp }),
   collect: (sessionId) => api.post(`/lockers/sessions/${sessionId}/collect`),
   resendOTP: (sessionId) => api.post(`/lockers/sessions/${sessionId}/resend-otp`),
+  rearm: () => api.post('/lockers/rearm'),
+  getBoxStatus: () => api.get('/v1/box/status'),
 };
 
 // ─── Notifications API ────────────────────────────────────────

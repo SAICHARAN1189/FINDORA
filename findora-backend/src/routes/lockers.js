@@ -286,13 +286,33 @@ router.post('/:id/heartbeat', (req, res) => {
   });
 });
 
-// Admin: Update locker state (simulation)
-router.put('/:id/state', authenticate, requireRole('institution_admin', 'super_admin'), (req, res) => {
-  const { state } = req.body;
-  if (!LOCKER_STATES.includes(state)) return res.status(400).json({ error: 'Invalid state' });
-  const updated = store.updateLocker(req.params.id, { state });
-  store.addAuditLog({ action: 'LOCKER_STATE_CHANGED', userId: req.user.uid, lockerId: req.params.id, details: `State -> ${state}` });
-  res.json(updated);
+// POST /api/lockers/rearm - Re-arm Locker A2 with a fresh OTP for continuous keypad testing
+router.post('/rearm', authenticate, (req, res) => {
+  const boxRoute = require('./box');
+  const newOtp = boxRoute.rearmLocker ? boxRoute.rearmLocker('locker-002') : `${Math.floor(100000 + Math.random() * 900000)}`;
+
+  // Also notify user on Telegram
+  try {
+    const telegramService = require('../services/telegramService');
+    const user = store.getUser(req.user.uid);
+    const chatId = user?.telegramChatId || 5679070779;
+    if (chatId && telegramService.sendOTPViaTelegram) {
+      telegramService.sendOTPViaTelegram(
+        chatId,
+        newOtp,
+        'Demo Item (Keypad Test)',
+        'Locker A2 – Ground Floor'
+      ).catch(() => {});
+    }
+  } catch (e) {}
+
+  res.json({
+    success: true,
+    message: 'Locker A2 re-armed to ITEM_DEPOSITED with new OTP',
+    otp: newOtp,
+    sessionId: 'session-001',
+    locker: store.getLocker('locker-002'),
+  });
 });
 
 module.exports = router;
